@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/sites-available/authentication.social:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+      - ./www:/var/www/authentication.social:ro
+      - ./logs:/var/log/nginx
+    depends_on:
+      - webapp
+    networks:
+      - app-network
+
+  webapp:
+    build: 
+      context: ./app
+      dockerfile: Dockerfile
+    expose:
+      - "8080"
+    environment:
+      - NODE_ENV=production
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
